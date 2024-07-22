@@ -1,0 +1,66 @@
+type Session = {
+  deviceId: string;
+  userId: string;
+  logged_in: Date;
+  logged_out: Date;
+  lastOpenedAt: Date;
+};
+
+type MonthlyUsage = {
+  month: string; // "YYYY-MM"
+  loggedInUsers: Set<string>;
+  activeUsers: Set<string>;
+};
+
+function getMonthlyUsage(sessions: Session[]): MonthlyUsage[] {
+  const monthlyUsageMap: { [key: string]: MonthlyUsage } = {};
+
+  for (const session of sessions) {
+    const { userId, logged_in, logged_out, lastOpenedAt } = session;
+
+    // Determine the months this session spans
+    const startMonth = new Date(logged_in.getFullYear(), logged_in.getMonth());
+    const endMonth = new Date(logged_out.getFullYear(), logged_out.getMonth());
+
+    // Iterate over each month in the range
+    let currentMonth = startMonth;
+    while (currentMonth <= endMonth) {
+      const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyUsageMap[monthKey]) {
+        monthlyUsageMap[monthKey] = { month: monthKey, loggedInUsers: new Set(), activeUsers: new Set() };
+      }
+
+      monthlyUsageMap[monthKey].loggedInUsers.add(userId);
+
+      if (lastOpenedAt >= currentMonth && lastOpenedAt < new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)) {
+        monthlyUsageMap[monthKey].activeUsers.add(userId);
+      }
+
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+    }
+  }
+
+  return Object.values(monthlyUsageMap);
+}
+
+// Example usage
+const sessions: Session[] = [
+  {
+    deviceId: "device1",
+    userId: "user1",
+    logged_in: new Date("2023-01-10"),
+    logged_out: new Date("2023-06-15"),
+    lastOpenedAt: new Date("2023-04-01"),
+  },
+  {
+    deviceId: "device2",
+    userId: "user2",
+    logged_in: new Date("2023-02-05"),
+    logged_out: new Date("2023-03-25"),
+    lastOpenedAt: new Date("2023-03-10"),
+  },
+];
+
+const usage = getMonthlyUsage(sessions);
+console.log(usage);
